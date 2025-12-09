@@ -6,31 +6,10 @@ import cv2
 import numpy as np
 from edge_impulse_linux.runner import ImpulseRunner
 
-def main():
-    if len(sys.argv) != 3:
-        print("使用方式: python3 classify_od.py <model.eim> <圖片>")
-        sys.exit(1)
 
-    model_path = sys.argv[1]
-    image_path = sys.argv[2]
-
-    print(f"載入模型: {model_path}")
-    print(f"載入圖片: {image_path}")
-
-    # 初始化推論引擎
-    runner = ImpulseRunner(model_path)
-    try:
-        model_info = runner.init()
-        print(f"模型標籤: {model_info['model_parameters']['labels']}")
-
-        # 取得模型需要的輸入尺寸
-        width = model_info['model_parameters']['image_input_width']
-        height = model_info['model_parameters']['image_input_height']
-        
-
-        # 讀取並前處理圖片
+def preprocess(img_path, width, height):
+     # 讀取並前處理圖片
         img = cv2.imread(image_path)
-
 
         # 1. 轉成 RGB (因為 OpenCV 預設是 BGR)
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -48,8 +27,36 @@ def main():
         img_processed = img_float.flatten()
 
         # 執行推論
-        result = runner.classify(img_processed)
+        return img.processed 
+        
 
+
+def main():
+    if len(sys.argv) != 3:
+        print("使用方式: python3 classify_od.py <model.eim> ")
+        sys.exit(1)
+
+    model_path = sys.argv[1]
+    print(f"載入模型: {model_path}")
+    
+    # 初始化推論引擎
+    runner = ImpulseRunner(model_path)
+    try:
+        model_info = runner.init()
+        print(f"模型標籤: {model_info['model_parameters']['labels']}")
+
+        # 取得模型需要的輸入尺寸
+        width = model_info['model_parameters']['image_input_width']
+        height = model_info['model_parameters']['image_input_height']
+        
+        image_files = glob.glob("images/*.jpg")
+        for img_path in image_files:
+            print(f"\n處理: {img_path}")
+            
+            img_processed= preprocess(img_path, width,height)
+            
+            result = runner.classify(preprocess(img_processed))
+        
         # --- 除錯步驟：印出原始結果 ---
         print("\n=== 原始回傳資料 ===")
         print(result)
